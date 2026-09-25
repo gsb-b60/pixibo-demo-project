@@ -1,18 +1,16 @@
-import { useState, useMemo } from "react";
-import "./App.css";
-import Slider from "@mui/material/Slider";
-import { Box, Typography } from "@mui/material";
-import sizeChart from "./data/size-chart.json";
-import type { SizeChart, BodyType, FitStyle } from "./types/size-chart";
+import type { BodyType, FitStyle, SizeChart } from "@/types/size-chart";
+import sizeChart from "@/data/size-chart.json";
+import { Box, Slider, Typography } from "@mui/material";
+import { useMemo, useState } from "react";
 
-const SIZES = (sizeChart as SizeChart).sizes;
-const BODY_TYPE_ADJUSTMENTS = (sizeChart as SizeChart).bodyTypeAdjustments;
-const FIT_MULTIPLIERS = (sizeChart as SizeChart).fitMultipliers;
+export default function SizeSlider() {
+  const SIZES = (sizeChart as SizeChart).sizes;
+  const BODY_TYPE_ADJUSTMENTS = (sizeChart as SizeChart).bodyTypeAdjustments;
+  const FIT_MULTIPLIERS = (sizeChart as SizeChart).fitMultipliers;
 
-type BodyTypeKey = BodyType;
-type FitStyleKey = FitStyle;
+  type BodyTypeKey = BodyType;
+  type FitStyleKey = FitStyle;
 
-function App() {
   const [userHeight, setHeight] = useState(170);
   const [userWeight, setWeight] = useState(70);
   const [userChest, setChest] = useState(95);
@@ -60,7 +58,11 @@ function App() {
       wrist: userWrist,
     };
 
-    const adjustments = BODY_TYPE_ADJUSTMENTS[bodyType] || { chest: 0, waist: 0, shoulder: 0 };
+    const adjustments = BODY_TYPE_ADJUSTMENTS[bodyType] || {
+      chest: 0,
+      waist: 0,
+      shoulder: 0,
+    };
     const adjustedMeasurements = {
       chest: measurements.chest + adjustments.chest,
       waist: measurements.waist + adjustments.waist,
@@ -122,7 +124,18 @@ function App() {
     }
 
     return bestSize;
-  }, [userChest, userWaist, userNeck, userShoulder, userSleeve, userBicep, userWrist, userHeight, userWeight, bodyType]);
+  }, [
+    userChest,
+    userWaist,
+    userNeck,
+    userShoulder,
+    userSleeve,
+    userBicep,
+    userWrist,
+    userHeight,
+    userWeight,
+    bodyType,
+  ]);
 
   const fitSizes = useMemo(() => {
     const baseSize = getBestSize;
@@ -138,7 +151,8 @@ function App() {
       let bestDiff = Infinity;
 
       for (const size of SIZES) {
-        const chestCenter = (size.measurements.chest.min + size.measurements.chest.max) / 2;
+        const chestCenter =
+          (size.measurements.chest.min + size.measurements.chest.max) / 2;
         const diff = Math.abs(chestCenter - targetChest);
         if (diff < bestDiff) {
           bestDiff = diff;
@@ -249,7 +263,6 @@ function App() {
       unit: isCm ? "cm" : "in",
     },
   ];
-
   return (
     <>
       <div style={{ padding: 20 }}>
@@ -342,7 +355,8 @@ function App() {
                 aria-label={m.label}
                 value={m.value}
                 onChange={(_, newValue) => {
-                  const val = typeof newValue === "number" ? newValue : Number(newValue);
+                  const val =
+                    typeof newValue === "number" ? newValue : Number(newValue);
                   if (m.label === "Height") {
                     m.setValue(isCm ? val : val * 30.48);
                   } else if (m.label === "Weight") {
@@ -433,7 +447,11 @@ function App() {
                 { label: "Slim", size: fitSizes.slim, color: "#e3f2fd" },
                 { label: "Regular", size: fitSizes.regular, color: "#e8f5e9" },
                 { label: "Relaxed", size: fitSizes.relaxed, color: "#fff3e0" },
-                { label: "Oversized", size: fitSizes.oversized, color: "#fce4ec" },
+                {
+                  label: "Oversized",
+                  size: fitSizes.oversized,
+                  color: "#fce4ec",
+                },
               ].map((fit) => (
                 <Box
                   key={fit.label}
@@ -466,5 +484,3 @@ function App() {
     </>
   );
 }
-
-export default App;

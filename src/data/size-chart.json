@@ -1,0 +1,117 @@
+{
+  "version": "1.0",
+  "units": { "length": "cm", "weight": "kg" },
+  "sizes": [
+    {
+      "label": "XS",
+      "measurements": {
+        "chest": { "min": 80, "max": 88 },
+        "waist": { "min": 68, "max": 76 },
+        "neck": { "min": 35, "max": 37 },
+        "shoulder": { "min": 40, "max": 44 },
+        "sleeve": { "min": 58, "max": 62 },
+        "bicep": { "min": 28, "max": 31 },
+        "wrist": { "min": 15, "max": 16.5 }
+      },
+      "heightRange": { "min": 160, "max": 175 },
+      "weightRange": { "min": 50, "max": 65 }
+    },
+    {
+      "label": "S",
+      "measurements": {
+        "chest": { "min": 88, "max": 96 },
+        "waist": { "min": 76, "max": 84 },
+        "neck": { "min": 37, "max": 39 },
+        "shoulder": { "min": 44, "max": 47 },
+        "sleeve": { "min": 60, "max": 64 },
+        "bicep": { "min": 30, "max": 33 },
+        "wrist": { "min": 16, "max": 17.5 }
+      },
+      "heightRange": { "min": 165, "max": 180 },
+      "weightRange": { "min": 60, "max": 75 }
+    },
+    {
+      "label": "M",
+      "measurements": {
+        "chest": { "min": 96, "max": 104 },
+        "waist": { "min": 84, "max": 92 },
+        "neck": { "min": 39, "max": 41 },
+        "shoulder": { "min": 46, "max": 49 },
+        "sleeve": { "min": 62, "max": 66 },
+        "bicep": { "min": 32, "max": 35 },
+        "wrist": { "min": 17, "max": 18.5 }
+      },
+      "heightRange": { "min": 170, "max": 185 },
+      "weightRange": { "min": 70, "max": 85 }
+    },
+    {
+      "label": "L",
+      "measurements": {
+        "chest": { "min": 104, "max": 112 },
+        "waist": { "min": 92, "max": 100 },
+        "neck": { "min": 41, "max": 43 },
+        "shoulder": { "min": 48, "max": 51 },
+        "sleeve": { "min": 64, "max": 68 },
+        "bicep": { "min": 34, "max": 37 },
+        "wrist": { "min": 18, "max": 19.5 }
+      },
+      "heightRange": { "min": 175, "max": 190 },
+      "weightRange": { "min": 80, "max": 95 }
+    },
+    {
+      "label": "XL",
+      "measurements": {
+        "chest": { "min": 112, "max": 120 },
+        "waist": { "min": 100, "max": 108 },
+        "neck": { "min": 43, "max": 45 },
+        "shoulder": { "min": 50, "max": 53 },
+        "sleeve": { "min": 65, "max": 69 },
+        "bicep": { "min": 36, "max": 39 },
+        "wrist": { "min": 19, "max": 20.5 }
+      },
+      "heightRange": { "min": 180, "max": 195 },
+      "weightRange": { "min": 90, "max": 110 }
+    },
+    {
+      "label": "XXL",
+      "measurements": {
+        "chest": { "min": 120, "max": 128 },
+        "waist": { "min": 108, "max": 116 },
+        "neck": { "min": 45, "max": 47 },
+        "shoulder": { "min": 52, "max": 55 },
+        "sleeve": { "min": 66, "max": 70 },
+        "bicep": { "min": 38, "max": 41 },
+        "wrist": { "min": 20, "max": 21.5 }
+      },
+      "heightRange": { "min": 185, "max": 200 },
+      "weightRange": { "min": 105, "max": 125 }
+    },
+    {
+      "label": "XXXL",
+      "measurements": {
+        "chest": { "min": 128, "max": 140 },
+        "waist": { "min": 116, "max": 124 },
+        "neck": { "min": 47, "max": 49 },
+        "shoulder": { "min": 54, "max": 57 },
+        "sleeve": { "min": 67, "max": 71 },
+        "bicep": { "min": 40, "max": 43 },
+        "wrist": { "min": 21, "max": 22.5 }
+      },
+      "heightRange": { "min": 190, "max": 205 },
+      "weightRange": { "min": 120, "max": 140 }
+    }
+  ],
+  "bodyTypeAdjustments": {
+    "hourglass": { "chest": 0, "waist": -2, "shoulder": 0 },
+    "triangle": { "chest": 2, "waist": 4, "shoulder": 0 },
+    "square": { "chest": 1, "waist": 2, "shoulder": 1 },
+    "rectangle": { "chest": 1, "waist": 1, "shoulder": 1 },
+    "inverted-triangle": { "chest": -1, "waist": -1, "shoulder": 2 }
+  },
+  "fitMultipliers": {
+    "slim": 0.95,
+    "regular": 1.0,
+    "relaxed": 1.05,
+    "oversized": 1.15
+  }
+}
