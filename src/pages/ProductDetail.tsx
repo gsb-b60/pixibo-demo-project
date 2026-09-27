@@ -78,8 +78,9 @@ export default function ProductDetail() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: window.innerWidth < 768 ? "1fr" : "1fr 1fr",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 350px), 1fr))",
             gap: 24,
+            alignItems: "start",
           }}
         >
           <ImageGallery

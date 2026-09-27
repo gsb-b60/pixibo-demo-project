@@ -84,7 +84,7 @@ export default memo(function ImageGallery({ images, selectedIndex, onSelectImage
   );
 
   return (
-    <div style={{ position: "sticky", top: 100 }}>
+    <div className="sticky top-4 md:top-24">
       <div className="image-gallery">
         <div
           className="glass-card product-card"

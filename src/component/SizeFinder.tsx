@@ -1,24 +1,14 @@
-import { useState, useEffect } from "react";
 import SizeSlider from "@/component/size-recommend-section";
 
 export default function SizeFinder() {
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
-
   return (
     <div
       className="glass"
       style={{
-        padding: isMobile ? 20 : 24,
+        padding: "clamp(16px, 3vw, 24px)",
         position: "relative",
         overflow: "hidden",
-        minHeight: isMobile ? "auto" : "100%",
+        width: "100%",
       }}
     >
       <div
@@ -32,7 +22,7 @@ export default function SizeFinder() {
       <h2
         className="glass-title"
         style={{
-          fontSize: isMobile ? 18 : 22,
+          fontSize: "clamp(18px, 2.5vw, 22px)",
           marginBottom: 16,
           textTransform: "uppercase",
           letterSpacing: "0.5px",

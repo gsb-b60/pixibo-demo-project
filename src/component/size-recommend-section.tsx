@@ -79,7 +79,8 @@ const GlassSlider = memo(function GlassSlider({ label, value, onChange, min, max
     <div style={{ width: "100%" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
         <label style={{ 
-          minWidth: 100, 
+          width: "100%",
+          maxWidth: 100,
           fontSize: "clamp(11px, 1.5vw, 13px)", 
           fontWeight: 600,
           color: "#1a1a1a",
@@ -138,7 +139,7 @@ const GlassSlider = memo(function GlassSlider({ label, value, onChange, min, max
           </div>
         </div>
         <div style={{ 
-          minWidth: 60, 
+          minWidth: 45,
           textAlign: "right",
           fontSize: "clamp(11px, 1.5vw, 13px)",
           fontWeight: 700,
