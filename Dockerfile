@@ -10,7 +10,7 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 ENV PNPM_ALLOW_BUILDS=esbuild
 
 # Copy package files first for cached layer installation
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml .npmrc ./
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
