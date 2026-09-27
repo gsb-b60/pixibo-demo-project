@@ -1,16 +1,180 @@
-import type { BodyType, FitStyle, SizeChart } from "@/types/size-chart";
-import sizeChart from "@/data/size-chart.json";
-import { Box, Slider, Typography } from "@mui/material";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback, useRef, memo } from "react";
+import {
+  createMeasurementConfigs,
+  SIZES,
+  BODY_TYPE_ADJUSTMENTS,
+  FIT_MULTIPLIERS,
+  type BodyTypeKey,
+  type FitStyleKey,
+} from "@/data/measurements";
+
+interface GlassSliderProps {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+  min: number;
+  max: number;
+  step: number;
+  unit: string;
+  defaultValue: number;
+  disabled?: boolean;
+}
+
+const GlassSlider = memo(function GlassSlider({ label, value, onChange, min, max, step, unit, defaultValue, disabled }: GlassSliderProps) {
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragValue, setDragValue] = useState<number | null>(null);
+
+  const displayValue = dragValue ?? value;
+  const percentage = ((displayValue - min) / (max - min)) * 100;
+
+  const sliderRef = useRef<HTMLDivElement>(null);
+
+  const updateFromClientX = useCallback((clientX: number) => {
+    if (!sliderRef.current) return;
+    const rect = sliderRef.current.getBoundingClientRect();
+    const newPercentage = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
+    const newValue = min + (newPercentage / 100) * (max - min);
+    const steppedValue = Math.round(newValue / step) * step;
+    const clampedValue = Math.max(min, Math.min(max, steppedValue));
+    setDragValue(clampedValue);
+    onChange(clampedValue);
+  }, [min, max, step, onChange]);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (disabled) return;
+    setIsDragging(true);
+    updateFromClientX(e.clientX);
+    const handleMouseMove = (e: MouseEvent) => updateFromClientX(e.clientX);
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      setDragValue(null);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, [disabled, updateFromClientX]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (disabled) return;
+    setIsDragging(true);
+    updateFromClientX(e.touches[0].clientX);
+    const handleTouchMove = (e: TouchEvent) => updateFromClientX(e.touches[0].clientX);
+    const handleTouchEnd = () => {
+      setIsDragging(false);
+      setDragValue(null);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+    document.addEventListener('touchmove', handleTouchMove);
+    document.addEventListener('touchend', handleTouchEnd);
+  }, [disabled, updateFromClientX]);
+
+  const handleReset = useCallback(() => {
+    setDragValue(null);
+    onChange(defaultValue);
+  }, [defaultValue, onChange]);
+
+  return (
+    <div style={{ width: "100%" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+        <label style={{ 
+          minWidth: 100, 
+          fontSize: "clamp(11px, 1.5vw, 13px)", 
+          fontWeight: 600,
+          color: "#1a1a1a",
+          whiteSpace: "nowrap"
+        }}>
+          {label}
+        </label>
+        <div style={{ flex: 1, position: "relative" }}>
+          <div
+            ref={sliderRef}
+            className="glass"
+            style={{
+              height: 6,
+              borderRadius: 3,
+              position: "relative",
+              cursor: disabled ? "not-allowed" : "pointer",
+              opacity: disabled ? 0.5 : 1,
+              padding: 1,
+              background: "rgba(0,0,0,0.04)",
+              border: "1px solid rgba(255,255,255,0.3)",
+              boxShadow: "inset 0 1px 4px rgba(0,0,0,0.08), 0 0 0 1px rgba(255,255,255,0.3) inset",
+            }}
+            onMouseDown={handleMouseDown}
+            onTouchStart={handleTouchStart}
+          >
+            <div
+              style={{
+                position: "absolute",
+                left: 0,
+                top: 0,
+                height: "100%",
+                width: `${percentage}%`,
+                background: "linear-gradient(90deg, rgba(0,0,0,0.9), rgba(0,0,0,0.6))",
+                borderRadius: "2px 0 0 2px",
+                pointerEvents: "none",
+                boxShadow: "0 1px 4px rgba(0,0,0,0.15)",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: `${percentage}%`,
+                top: "50%",
+                transform: `translate(-50%, -50%) ${isDragging ? 'scale(1.2)' : 'scale(1)'}`,
+                width: 14,
+                height: 14,
+                background: "rgba(255,255,255,0.95)",
+                backdropFilter: "blur(10px)",
+                border: "2px solid #000",
+                borderRadius: "50%",
+                boxShadow: isDragging ? "0 4px 12px rgba(0,0,0,0.25)" : "0 2px 8px rgba(0,0,0,0.15)",
+                transition: "transform 0.1s ease, background 0.1s ease, box-shadow 0.1s ease",
+                zIndex: 2,
+              }}
+            />
+          </div>
+        </div>
+        <div style={{ 
+          minWidth: 60, 
+          textAlign: "right",
+          fontSize: "clamp(11px, 1.5vw, 13px)",
+          fontWeight: 700,
+          color: "#1a1a1a",
+        }}>
+          {displayValue.toFixed(step < 1 ? 1 : 0)} {unit}
+        </div>
+        <button
+          onClick={handleReset}
+          disabled={disabled}
+          className="glass-button"
+          style={{
+            width: 24,
+            height: 24,
+            borderRadius: "50%",
+            fontSize: 12,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: disabled ? "not-allowed" : "pointer",
+            opacity: disabled ? 0.5 : 1,
+            padding: 0,
+            transition: "all 0.2s ease",
+          }}
+          aria-label={`Reset ${label} to default`}
+          title="Reset to default"
+        >
+          ⟳
+        </button>
+      </div>
+    </div>
+  );
+});
 
 export default function SizeSlider() {
-  const SIZES = (sizeChart as SizeChart).sizes;
-  const BODY_TYPE_ADJUSTMENTS = (sizeChart as SizeChart).bodyTypeAdjustments;
-  const FIT_MULTIPLIERS = (sizeChart as SizeChart).fitMultipliers;
-
-  type BodyTypeKey = BodyType;
-  type FitStyleKey = FitStyle;
-
+  const [gender, setGender] = useState<"male" | "female">("male");
   const [userHeight, setHeight] = useState(170);
   const [userWeight, setWeight] = useState(70);
   const [userChest, setChest] = useState(95);
@@ -19,33 +183,25 @@ export default function SizeSlider() {
   const [userShoulder, setShoulder] = useState(45);
   const [userSleeve, setSleeve] = useState(63);
   const [userBicep, setBicep] = useState(32);
-  const [userWrist, setWrist] = useState(17);
   const [isCm, setIsCm] = useState(true);
   const [isKg, setIsKg] = useState(true);
 
   const [bodyType, setBodyType] = useState<BodyTypeKey>("hourglass");
 
-  const setAverage = () => {
-    setHeight(175);
-    setWeight(75);
-    setChest(100);
-    setWaist(85);
-    setNeck(39);
-    setShoulder(46);
-    setSleeve(65);
-    setBicep(33);
-    setWrist(17.5);
-  };
+  const handleGenderChange = useCallback((g: "male" | "female") => {
+    setGender(g);
+    if (g === "male") {
+      setHeight(175); setWeight(75); setChest(100); setWaist(85);
+      setNeck(39); setShoulder(46); setSleeve(65); setBicep(33);
+    } else {
+      setHeight(163); setWeight(58); setChest(88); setWaist(70);
+      setNeck(34); setShoulder(40); setSleeve(58); setBicep(27);
+    }
+  }, []);
 
-  const heightInDisplayUnit = isCm ? userHeight : userHeight / 30.48;
-  const weightInDisplayUnit = isKg ? userWeight : userWeight * 2.20462;
-  const chestInDisplayUnit = isCm ? userChest : userChest / 2.54;
-  const waistInDisplayUnit = isCm ? userWaist : userWaist / 2.54;
-  const neckInDisplayUnit = isCm ? userNeck : userNeck / 2.54;
-  const shoulderInDisplayUnit = isCm ? userShoulder : userShoulder / 2.54;
-  const sleeveInDisplayUnit = isCm ? userSleeve : userSleeve / 2.54;
-  const bicepInDisplayUnit = isCm ? userBicep : userBicep / 2.54;
-  const wristInDisplayUnit = isCm ? userWrist : userWrist / 2.54;
+  const setAverage = useCallback(() => {
+    handleGenderChange(gender);
+  }, [gender, handleGenderChange]);
 
   const getBestSize = useMemo(() => {
     const measurements = {
@@ -55,7 +211,6 @@ export default function SizeSlider() {
       shoulder: userShoulder,
       sleeve: userSleeve,
       bicep: userBicep,
-      wrist: userWrist,
     };
 
     const adjustments = BODY_TYPE_ADJUSTMENTS[bodyType] || {
@@ -70,7 +225,6 @@ export default function SizeSlider() {
       shoulder: measurements.shoulder + adjustments.shoulder,
       sleeve: measurements.sleeve,
       bicep: measurements.bicep,
-      wrist: measurements.wrist,
     };
 
     let bestSize = "M";
@@ -80,7 +234,6 @@ export default function SizeSlider() {
       let score = 0;
       const m = size.measurements;
 
-      // Body measurements - weighted lower
       for (const [key, value] of Object.entries(adjustedMeasurements)) {
         const range = m[key as keyof typeof m];
         if (range) {
@@ -95,7 +248,6 @@ export default function SizeSlider() {
         }
       }
 
-      // Height - higher weight
       const hRange = size.heightRange;
       if (userHeight < hRange.min) {
         score += (hRange.min - userHeight) * 2.0;
@@ -106,7 +258,6 @@ export default function SizeSlider() {
         score += Math.abs(userHeight - center) * 0.5;
       }
 
-      // Weight - highest weight
       const wRange = size.weightRange;
       if (userWeight < wRange.min) {
         score += (wRange.min - userWeight) * 3.0;
@@ -131,7 +282,6 @@ export default function SizeSlider() {
     userShoulder,
     userSleeve,
     userBicep,
-    userWrist,
     userHeight,
     userWeight,
     bodyType,
@@ -171,316 +321,224 @@ export default function SizeSlider() {
     };
   }, [getBestSize]);
 
-  const measurements = [
-    {
-      label: "Height",
-      value: heightInDisplayUnit,
-      setValue: setHeight,
-      defaultValue: 175,
-      min: isCm ? 50 : 50 / 30.48,
-      max: isCm ? 272 : 272 / 30.48,
-      step: isCm ? 1 : 1 / 30.48,
-      unit: isCm ? "cm" : "ft",
-    },
-    {
-      label: "Weight",
-      value: weightInDisplayUnit,
-      setValue: setWeight,
-      defaultValue: 75,
-      min: isKg ? 15 : 33,
-      max: isKg ? 200 : 440,
-      step: isKg ? 1 : 1,
-      unit: isKg ? "kg" : "lbs",
-    },
-    {
-      label: "Chest",
-      value: chestInDisplayUnit,
-      setValue: setChest,
-      defaultValue: 100,
-      min: isCm ? 70 : 27,
-      max: isCm ? 140 : 55,
-      step: isCm ? 1 : 0.5,
-      unit: isCm ? "cm" : "in",
-    },
-    {
-      label: "Waist",
-      value: waistInDisplayUnit,
-      setValue: setWaist,
-      defaultValue: 85,
-      min: isCm ? 60 : 23,
-      max: isCm ? 130 : 51,
-      step: isCm ? 1 : 0.5,
-      unit: isCm ? "cm" : "in",
-    },
-    {
-      label: "Neck",
-      value: neckInDisplayUnit,
-      setValue: setNeck,
-      defaultValue: 39,
-      min: isCm ? 30 : 12,
-      max: isCm ? 50 : 20,
-      step: isCm ? 0.5 : 0.5,
-      unit: isCm ? "cm" : "in",
-    },
-    {
-      label: "Shoulder Width",
-      value: shoulderInDisplayUnit,
-      setValue: setShoulder,
-      defaultValue: 46,
-      min: isCm ? 35 : 14,
-      max: isCm ? 60 : 24,
-      step: isCm ? 0.5 : 0.5,
-      unit: isCm ? "cm" : "in",
-    },
-    {
-      label: "Sleeve Length",
-      value: sleeveInDisplayUnit,
-      setValue: setSleeve,
-      defaultValue: 65,
-      min: isCm ? 55 : 22,
-      max: isCm ? 75 : 30,
-      step: isCm ? 0.5 : 0.5,
-      unit: isCm ? "cm" : "in",
-    },
-    {
-      label: "Bicep",
-      value: bicepInDisplayUnit,
-      setValue: setBicep,
-      defaultValue: 33,
-      min: isCm ? 25 : 10,
-      max: isCm ? 45 : 18,
-      step: isCm ? 0.5 : 0.5,
-      unit: isCm ? "cm" : "in",
-    },
-    {
-      label: "Wrist",
-      value: wristInDisplayUnit,
-      setValue: setWrist,
-      defaultValue: 17.5,
-      min: isCm ? 15 : 6,
-      max: isCm ? 22 : 9,
-      step: isCm ? 0.5 : 0.5,
-      unit: isCm ? "cm" : "in",
-    },
-  ];
-  return (
-    <>
-      <div style={{ padding: 20 }}>
-        <Typography variant="h3" gutterBottom>
-          pixibo
-        </Typography>
-        <Typography variant="h5" gutterBottom>
-          tailor - find your fix
-        </Typography>
+  const setters = useMemo(() => ({
+    setHeight,
+    setWeight,
+    setChest,
+    setWaist,
+    setNeck,
+    setShoulder,
+    setSleeve,
+    setBicep,
+  }), [setHeight, setWeight, setChest, setWaist, setNeck, setShoulder, setSleeve, setBicep]);
 
-        <div
-          style={{
-            display: "flex",
-            gap: 10,
-            marginBottom: 20,
-            flexWrap: "wrap",
-            alignItems: "center",
-          }}
-        >
-          <div style={{ display: "flex", gap: 10 }}>
-            <button
-              onClick={() => setIsCm(true)}
-              style={{ fontWeight: isCm ? "bold" : "normal" }}
-            >
-              cm
-            </button>
-            <button
-              onClick={() => setIsCm(false)}
-              style={{ fontWeight: !isCm ? "bold" : "normal" }}
-            >
-              ft/in
-            </button>
-          </div>
-          <div style={{ display: "flex", gap: 10, marginLeft: 20 }}>
-            <button
-              onClick={() => setIsKg(true)}
-              style={{ fontWeight: isKg ? "bold" : "normal" }}
-            >
-              kg
-            </button>
-            <button
-              onClick={() => setIsKg(false)}
-              style={{ fontWeight: !isKg ? "bold" : "normal" }}
-            >
-              lbs
-            </button>
-          </div>
+  const stateValues = useMemo(() => ({
+    height: userHeight,
+    weight: userWeight,
+    chest: userChest,
+    waist: userWaist,
+    neck: userNeck,
+    shoulder: userShoulder,
+    sleeve: userSleeve,
+    bicep: userBicep,
+  }), [userHeight, userWeight, userChest, userWaist, userNeck, userShoulder, userSleeve, userBicep]);
+
+  const measurements = useMemo(
+    () => createMeasurementConfigs(isCm, isKg, setters, stateValues),
+    [isCm, isKg, setters, stateValues]
+  );
+
+  return (
+    <div className="glass" style={{ 
+      padding: "12px 16px", 
+      width: "100%",
+      maxWidth: "100%",
+      boxSizing: "border-box"
+    }}>
+      <div style={{ 
+        textAlign: "center", 
+        marginBottom: 10,
+        borderBottom: "1px solid rgba(0,0,0,0.1)",
+        paddingBottom: 8
+      }}>
+        <h2 className="glass-title" style={{ 
+          fontSize: "clamp(16px, 3vw, 20px)", 
+          textTransform: "uppercase", 
+          letterSpacing: "1px", 
+          margin: "0 0 4px"
+        }}>
+          Nguyen Dinh Hieu
+        </h2>
+        <p className="glass-subtitle" style={{ 
+          margin: 0, 
+          fontSize: "clamp(11px, 1.5vw, 13px)",
+        }}>
+          Tailor Fit Finder · Flutter Developer Portfolio
+        </p>
+      </div>
+
+      <div style={{ 
+        display: "flex", 
+        flexWrap: "wrap", 
+        gap: "8px", 
+        marginBottom: 12,
+        justifyContent: "center"
+      }}>
+        <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
           <button
-            onClick={setAverage}
-            style={{
-              marginLeft: 20,
-              padding: "8px 16px",
-              backgroundColor: "#1976d2",
-              color: "white",
-              border: "none",
-              borderRadius: 4,
-              cursor: "pointer",
-            }}
+            className={`glass-button ${gender === "male" ? 'selected' : 'secondary'}`}
+            onClick={() => handleGenderChange("male")}
+            style={{ padding: "6px 10px", fontSize: 11 }}
           >
-            Set Average
+            Male
+          </button>
+          <button
+            className={`glass-button ${gender === "female" ? 'selected' : 'secondary'}`}
+            onClick={() => handleGenderChange("female")}
+            style={{ padding: "6px 10px", fontSize: 11 }}
+          >
+            Female
           </button>
         </div>
-
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 2,
-            maxWidth: 500,
-          }}
+        <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+          <button
+            className={`glass-button ${isCm ? 'selected' : 'secondary'}`}
+            onClick={() => setIsCm(true)}
+            style={{ padding: "6px 10px", fontSize: 11 }}
+          >
+            cm
+          </button>
+          <button
+            className={`glass-button ${!isCm ? 'selected' : 'secondary'}`}
+            onClick={() => setIsCm(false)}
+            style={{ padding: "6px 10px", fontSize: 11 }}
+          >
+            ft/in
+          </button>
+        </div>
+        <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+          <button
+            className={`glass-button ${isKg ? 'selected' : 'secondary'}`}
+            onClick={() => setIsKg(true)}
+            style={{ padding: "6px 10px", fontSize: 11 }}
+          >
+            kg
+          </button>
+          <button
+            className={`glass-button ${!isKg ? 'selected' : 'secondary'}`}
+            onClick={() => setIsKg(false)}
+            style={{ padding: "6px 10px", fontSize: 11 }}
+          >
+            lbs
+          </button>
+        </div>
+        <select
+          value={bodyType}
+          onChange={(e) => setBodyType(e.target.value as BodyTypeKey)}
+          className="glass-select"
+          style={{ padding: "6px 10px", fontSize: 11, maxWidth: 160 }}
         >
-          {measurements.map((m, index) => (
-            <Box
-              key={index}
-              sx={{
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                gap: 2,
-              }}
-            >
-              <Box sx={{ minWidth: 160 }}>
-                <Typography variant="body1">
-                  {m.label}:{" "}
-                  {typeof m.value === "number" ? m.value.toFixed(1) : m.value}{" "}
-                  {m.unit}
-                </Typography>
-              </Box>
-              <Slider
-                aria-label={m.label}
-                value={m.value}
-                onChange={(_, newValue) => {
-                  const val =
-                    typeof newValue === "number" ? newValue : Number(newValue);
-                  if (m.label === "Height") {
-                    m.setValue(isCm ? val : val * 30.48);
-                  } else if (m.label === "Weight") {
-                    m.setValue(isKg ? val : val / 2.20462);
-                  } else {
-                    m.setValue(isCm ? val : val * 2.54);
-                  }
+          <option value="hourglass">Hourglass</option>
+          <option value="triangle">Triangle</option>
+          <option value="square">Square</option>
+          <option value="rectangle">Rectangle</option>
+          <option value="inverted-triangle">Inverted Triangle</option>
+        </select>
+        <button
+          className="glass-button"
+          onClick={setAverage}
+          style={{ padding: "6px 10px", fontSize: 11 }}
+        >
+          Set Average
+        </button>
+      </div>
+
+      <div style={{ 
+        display: "grid", 
+        gap: 6,
+        maxWidth: "100%"
+      }}>
+        {measurements.map((m, index) => (
+          <GlassSlider
+            key={index}
+            label={m.label}
+            value={m.value}
+            onChange={m.setValue}
+            min={m.min}
+            max={m.max}
+            step={m.step}
+            unit={m.unit}
+            defaultValue={m.defaultValue}
+          />
+        ))}
+      </div>
+
+      <div style={{ 
+        borderTop: "1px solid rgba(0,0,0,0.1)", 
+        paddingTop: 12, 
+        marginTop: 12,
+        display: "grid",
+        gridTemplateColumns: "1fr",
+        gap: 8,
+      }}>
+        <div>
+          <label style={{ 
+            fontSize: "clamp(10px, 1.5vw, 12px)", 
+            color: "#666", 
+            display: "block", 
+            marginBottom: 4,
+            fontWeight: 600,
+            textTransform: "uppercase",
+            letterSpacing: "0.5px"
+          }}>
+            Fit Reference
+          </label>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {[
+              { label: "Slim", size: fitSizes.slim },
+              { label: "Regular", size: fitSizes.regular },
+              { label: "Relaxed", size: fitSizes.relaxed },
+              { label: "Oversized", size: fitSizes.oversized },
+            ].map((fit) => (
+              <div
+                key={fit.label}
+                className="glass-accent"
+                style={{ 
+                  padding: "6px 10px", 
+                  fontSize: "clamp(10px, 1.5vw, 12px)",
+                  fontWeight: 600,
+                  whiteSpace: "nowrap",
+                  flexShrink: 0,
                 }}
-                valueLabelDisplay="auto"
-                step={m.step}
-                min={m.min}
-                max={m.max}
-                sx={{ flex: 1 }}
-              />
-              <button
-                onClick={() => m.setValue(m.defaultValue)}
-                style={{
-                  padding: "6px 8px",
-                  backgroundColor: "transparent",
-                  border: "none",
-                  borderRadius: 4,
-                  cursor: "pointer",
-                  color: "#666",
-                  fontSize: 18,
-                  lineHeight: 1,
-                  transition: "color 0.2s",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "#1976d2")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "#666")}
-                title="Reset to default"
               >
-                ⟳
-              </button>
-            </Box>
-          ))}
-        </Box>
-
-        <div
-          style={{
-            display: "flex",
-            gap: 20,
-            marginTop: 20,
-            flexWrap: "wrap",
-            alignItems: "center",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 4,
-              minWidth: 180,
-            }}
-          >
-            <label style={{ fontSize: 14, color: "#666" }}>Body Type</label>
-            <select
-              value={bodyType}
-              onChange={(e) => setBodyType(e.target.value as BodyTypeKey)}
-              style={{
-                padding: "10px 12px",
-                fontSize: 16,
-                border: "1px solid #ccc",
-                borderRadius: 4,
-                backgroundColor: "white",
-                cursor: "pointer",
-                outline: "none",
-              }}
-            >
-              <option value="hourglass">Hourglass</option>
-              <option value="triangle">Triangle</option>
-              <option value="square">Square</option>
-              <option value="rectangle">Rectangle</option>
-              <option value="inverted-triangle">Inverted Triangle</option>
-            </select>
+                {fit.label}: {fit.size}
+              </div>
+            ))}
           </div>
+        </div>
 
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 4,
-              minWidth: 300,
-            }}
-          >
-            <label style={{ fontSize: 14, color: "#666" }}>Fit Reference</label>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {[
-                { label: "Slim", size: fitSizes.slim, color: "#e3f2fd" },
-                { label: "Regular", size: fitSizes.regular, color: "#e8f5e9" },
-                { label: "Relaxed", size: fitSizes.relaxed, color: "#fff3e0" },
-                {
-                  label: "Oversized",
-                  size: fitSizes.oversized,
-                  color: "#fce4ec",
-                },
-              ].map((fit) => (
-                <Box
-                  key={fit.label}
-                  sx={{
-                    padding: "8px 16px",
-                    borderRadius: 4,
-                    backgroundColor: fit.color,
-                    border: "1px solid #ddd",
-                    fontWeight: 600,
-                    fontSize: 14,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {fit.label}: {fit.size}
-                </Box>
-              ))}
-            </div>
+        <div style={{ textAlign: "center", paddingTop: 4 }}>
+          <p className="glass-subtitle" style={{ 
+            fontSize: "clamp(10px, 1.5vw, 12px)", 
+            marginBottom: 6,
+          }}>
+            Recommended Size (Regular):
+          </p>
+          <div className="glass" style={{ 
+            fontWeight: 700, 
+            fontSize: "clamp(22px, 5vw, 36px)", 
+            color: "#000",
+            lineHeight: 1,
+            display: "inline-block",
+            border: "1px solid rgba(0,0,0,0.12)",
+            borderRadius: 12,
+            padding: "8px 24px",
+            boxShadow: "0 2px 12px rgba(0,0,0,0.08), 0 0 0 1px rgba(255,255,255,0.6) inset",
+          }}>
+            {fitSizes.regular}
           </div>
-
-          <Box sx={{ minWidth: 200 }}>
-            <Typography variant="body1" color="text.secondary" gutterBottom>
-              Recommended Size (Regular):
-            </Typography>
-            <Typography variant="h6" component="span">
-              {fitSizes.regular}
-            </Typography>
-          </Box>
         </div>
       </div>
-    </>
+    </div>
   );
 }
