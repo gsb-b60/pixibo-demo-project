@@ -6,6 +6,9 @@ WORKDIR /app
 # Enable pnpm via corepack
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
+# Allow esbuild build script for pnpm v10+
+ENV PNPM_ALLOW_BUILDS=esbuild
+
 # Copy package files first for cached layer installation
 COPY package.json pnpm-lock.yaml ./
 
